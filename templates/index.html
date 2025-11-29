@@ -20,8 +20,8 @@
         .upload-area:hover { border-color: #667eea; background: #f8f9ff; }
         .upload-area.dragover { border-color: #667eea; background: #f0f4ff; }
         .upload-icon { font-size: 3rem; margin-bottom: 10px; }
-        .preview-area { display: none; margin-bottom: 15px; }
-        .preview-area img { max-width: 100%; max-height: 300px; border-radius: 10px; }
+        .preview-area { display: none; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .preview-area img { max-height: 200px; border-radius: 10px; }
         .instructions { background: #f0f4ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         .instructions ol { margin-left: 20px; }
         .instructions li { margin: 5px 0; }
@@ -41,6 +41,7 @@
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
         .toast.show { opacity: 1; }
         input[type="file"] { display: none; }
+        .file-count { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -58,18 +59,16 @@
                     <strong>📋 사용 방법:</strong>
                     <ol>
                         <li>쿠팡 상품 페이지에서 <strong>GoFullPage</strong> 등으로 전체 캡처</li>
-                        <li>아래 영역에 이미지를 드래그하거나 클릭해서 업로드</li>
+                        <li>아래 영역에 이미지를 드래그하거나 클릭해서 업로드 (여러 장 가능!)</li>
                     </ol>
                 </div>
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();">
                     <div class="upload-icon">📁</div>
                     <p>이미지를 드래그하거나 클릭해서 업로드</p>
-                    <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">PNG, JPG 지원</p>
+                    <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">PNG, JPG 지원 (여러 장 선택 가능)</p>
                 </div>
-                <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
-                <div class="preview-area" id="previewArea">
-                    <img id="previewImage" src="">
-                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+                <div class="preview-area" id="previewArea"></div>
                 <button onclick="analyzeImage()">분석하기</button>
             </div>
             
@@ -100,7 +99,7 @@
     <div class="toast" id="toast">복사되었습니다!</div>
     
     <script>
-        let selectedFile = null;
+        let selectedFiles = [];
         
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -114,36 +113,41 @@
             }
         }
         
-        // 드래그 앤 드롭
         const uploadArea = document.getElementById('uploadArea');
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
         uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('dragover'); });
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
         });
         
-        function handleFile(file) {
-            if (!file || !file.type.startsWith('image/')) {
+        function handleFiles(files) {
+            selectedFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (selectedFiles.length === 0) {
                 showError('이미지 파일만 업로드 가능합니다.');
                 return;
             }
-            selectedFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('previewImage').src = e.target.result;
-                document.getElementById('previewArea').style.display = 'block';
-                document.getElementById('uploadArea').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = '<div class="file-count">📷 ' + selectedFiles.length + '장 선택됨</div><br>';
+            selectedFiles.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    previewArea.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+            previewArea.style.display = 'block';
+            uploadArea.style.display = 'none';
         }
         
         async function analyzeImage() {
-            if (!selectedFile) { showError('이미지를 업로드해주세요.'); return; }
+            if (selectedFiles.length === 0) { showError('이미지를 업로드해주세요.'); return; }
             startLoading();
             const formData = new FormData();
-            formData.append('image', selectedFile);
+            selectedFiles.forEach(file => formData.append('images', file));
             try {
                 const response = await fetch('/analyze', { method: 'POST', body: formData });
                 const data = await response.json();
