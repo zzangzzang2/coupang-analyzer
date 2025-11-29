@@ -12,20 +12,43 @@ def init_gemini():
 
 def parse_html(html_content):
     try:
+        import json
+        import re
         soup = BeautifulSoup(html_content, 'html.parser')
+        
         product_name = ""
-        name_tag = soup.select_one('h1.prod-buy-header__title') or soup.select_one('.prod-buy-header__title')
-        if name_tag:
-            product_name = name_tag.get_text(strip=True)
         price = ""
-        price_tag = soup.select_one('.total-price strong') or soup.select_one('span.total-price')
-        if price_tag:
-            price = price_tag.get_text(strip=True)
         description_texts = []
-        for elem in soup.select('.prod-description, .prod-buy-header__sub-title, .prod-option-item, .prod-attr-item, .prod-description-attribute'):
+        
+        # JSON-LD에서 상품 정보 찾기
+        for script in soup.find_all('script', type='application/ld+json'):
+            try:
+                data = json.loads(script.string)
+                if data.get('@type') == 'Product':
+                    product_name = data.get('name', '')
+                    if 'offers' in data:
+                        price = str(data['offers'].get('price', '')) + '원'
+                    if 'description' in data:
+                        description_texts.append(data['description'])
+            except:
+                pass
+        
+        # 기존 방식도 시도
+        if not product_name:
+            name_tag = soup.select_one('h1.prod-buy-header__title') or soup.select_one('.prod-buy-header__title')
+            if name_tag:
+                product_name = name_tag.get_text(strip=True)
+        
+        if not price:
+            price_tag = soup.select_one('.total-price strong') or soup.select_one('span.total-price')
+            if price_tag:
+                price = price_tag.get_text(strip=True)
+        
+        for elem in soup.select('.prod-description, .prod-buy-header__sub-title, .prod-option-item, .prod-attr-item'):
             text = elem.get_text(strip=True)
             if text and len(text) > 3:
                 description_texts.append(text)
+        
         return {'success': True, 'product_name': product_name, 'price': price, 'descriptions': list(set(description_texts))[:30]}
     except Exception as e:
         return {'success': False, 'error': str(e)}
