@@ -19,7 +19,7 @@ def scrape_coupang(url):
     }
     try:
         response = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(response.text, 'lxml')
+        soup = BeautifulSoup(response.text, 'html.parser')
         product_name = ""
         name_tag = soup.select_one('h1.prod-buy-header__title') or soup.select_one('.prod-buy-header__title')
         if name_tag:
