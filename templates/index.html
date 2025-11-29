@@ -7,20 +7,22 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 900px; margin: 0 auto; }
         h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2rem; }
         .subtitle { color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px; }
         .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input[type="text"] { flex: 1; padding: 15px 20px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
-        input[type="text"]:focus { outline: none; border-color: #667eea; }
-        button { padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .instructions { background: #f0f4ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem; color: #444; }
+        .instructions ol { margin-left: 20px; }
+        .instructions li { margin: 5px 0; }
+        textarea { width: 100%; height: 150px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; resize: vertical; margin-bottom: 15px; }
+        textarea:focus { outline: none; border-color: #667eea; }
+        button { padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; }
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
         button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .result-area { margin-top: 30px; display: none; }
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .result-title { font-size: 1.2rem; color: #333; font-weight: bold; }
-        .copy-btn { padding: 8px 16px; font-size: 0.9rem; background: #28a745; }
+        .copy-btn { padding: 8px 16px; font-size: 0.9rem; background: #28a745; width: auto; }
         .result-content { background: #f8f9fa; border-radius: 10px; padding: 20px; white-space: pre-wrap; line-height: 1.8; color: #333; max-height: 500px; overflow-y: auto; }
         .loading { display: none; text-align: center; padding: 40px; }
         .spinner { width: 50px; height: 50px; border: 4px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
@@ -28,23 +30,34 @@
         .error { background: #fee; color: #c00; padding: 15px; border-radius: 10px; margin-top: 20px; display: none; }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; }
         .toast.show { opacity: 1; }
+        .product-info { background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .product-name { font-size: 1.1rem; font-weight: bold; color: #2e7d32; }
+        .product-price { color: #1565c0; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🛒 쿠팡 상품 분석기</h1>
-        <p class="subtitle">상품 URL을 입력하면 블로그용 특징을 정리해드려요</p>
+        <p class="subtitle">상품 페이지 HTML을 붙여넣으면 블로그용 특징을 정리해드려요</p>
         <div class="card">
-            <div class="input-group">
-                <input type="text" id="urlInput" placeholder="쿠팡 상품 URL을 붙여넣으세요">
-                <button id="analyzeBtn" onclick="analyze()">분석하기</button>
+            <div class="instructions">
+                <strong>📋 사용 방법:</strong>
+                <ol>
+                    <li>쿠팡 상품 페이지를 엽니다</li>
+                    <li>페이지에서 <strong>Ctrl+U</strong> (소스보기) 누릅니다</li>
+                    <li><strong>Ctrl+A</strong> (전체선택) → <strong>Ctrl+C</strong> (복사)</li>
+                    <li>아래 입력창에 <strong>Ctrl+V</strong> (붙여넣기)</li>
+                </ol>
             </div>
+            <textarea id="htmlInput" placeholder="여기에 HTML 소스를 붙여넣으세요..."></textarea>
+            <button id="analyzeBtn" onclick="analyze()">분석하기</button>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>상품 정보를 분석하고 있어요...</p>
             </div>
             <div class="error" id="error"></div>
             <div class="result-area" id="resultArea">
+                <div class="product-info" id="productInfo"></div>
                 <div class="result-header">
                     <span class="result-title">📝 분석 결과</span>
                     <button class="copy-btn" onclick="copyResult()">📋 복사</button>
@@ -55,46 +68,39 @@
     </div>
     <div class="toast" id="toast">복사되었습니다!</div>
     <script>
-        const urlInput = document.getElementById('urlInput');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loading = document.getElementById('loading');
-        const error = document.getElementById('error');
-        const resultArea = document.getElementById('resultArea');
-        const resultContent = document.getElementById('resultContent');
-        const toast = document.getElementById('toast');
-        urlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') analyze(); });
         async function analyze() {
-            const url = urlInput.value.trim();
-            if (!url) { showError('URL을 입력해주세요.'); return; }
-            analyzeBtn.disabled = true;
-            loading.style.display = 'block';
-            error.style.display = 'none';
-            resultArea.style.display = 'none';
+            const html = document.getElementById('htmlInput').value.trim();
+            if (!html) { showError('HTML을 붙여넣어주세요.'); return; }
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('resultArea').style.display = 'none';
             try {
                 const response = await fetch('/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
+                    body: JSON.stringify({ html })
                 });
                 const data = await response.json();
                 if (data.success) {
-                    resultContent.textContent = data.result;
-                    resultArea.style.display = 'block';
+                    document.getElementById('productInfo').innerHTML = '<div class="product-name">📦 ' + data.product_name + '</div><div class="product-price">💰 ' + data.price + '</div>';
+                    document.getElementById('resultContent').textContent = data.result;
+                    document.getElementById('resultArea').style.display = 'block';
                 } else {
                     showError(data.error);
                 }
             } catch (e) {
                 showError('서버 연결에 실패했습니다.');
             } finally {
-                analyzeBtn.disabled = false;
-                loading.style.display = 'none';
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
             }
         }
-        function showError(message) { error.textContent = message; error.style.display = 'block'; }
+        function showError(message) { document.getElementById('error').textContent = message; document.getElementById('error').style.display = 'block'; }
         function copyResult() {
-            navigator.clipboard.writeText(resultContent.textContent).then(() => {
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 2000);
+            navigator.clipboard.writeText(document.getElementById('resultContent').textContent).then(() => {
+                document.getElementById('toast').classList.add('show');
+                setTimeout(() => document.getElementById('toast').classList.remove('show'), 2000);
             });
         }
     </script>
