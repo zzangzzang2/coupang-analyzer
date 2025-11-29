@@ -10,9 +10,9 @@ def init_gemini():
     genai.configure(api_key=api_key)
     return genai.GenerativeModel('gemini-2.0-flash')
 
-def analyze_with_gemini_image(image_data):
+def analyze_with_gemini_images(image_list):
     model = init_gemini()
-    prompt = """이 이미지는 쿠팡 상품 페이지 캡처입니다.
+    prompt = """이 이미지들은 쿠팡 상품 페이지 캡처입니다.
 
 이미지에서 상품 정보를 찾아서 블로그 작성용 특징을 정리해주세요.
 
@@ -31,13 +31,13 @@ def analyze_with_gemini_image(image_data):
 ..."""
     
     try:
-        response = model.generate_content([
-            prompt,
-            {
+        content = [prompt]
+        for img_data in image_list:
+            content.append({
                 'mime_type': 'image/png',
-                'data': image_data
-            }
-        ])
+                'data': img_data
+            })
+        response = model.generate_content(content)
         return {'success': True, 'result': response.text}
     except Exception as e:
         return {'success': False, 'error': str(e)}
@@ -77,12 +77,15 @@ def index():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     # 이미지 업로드 방식
-    if 'image' in request.files:
-        file = request.files['image']
-        if file.filename == '':
+    if 'images' in request.files or 'image' in request.files:
+        files = request.files.getlist('images') or [request.files['image']]
+        if not files or files[0].filename == '':
             return jsonify({'success': False, 'error': '파일을 선택해주세요.'})
-        image_data = base64.b64encode(file.read()).decode('utf-8')
-        analysis = analyze_with_gemini_image(image_data)
+        image_list = []
+        for file in files:
+            if file.filename:
+                image_list.append(base64.b64encode(file.read()).decode('utf-8'))
+        analysis = analyze_with_gemini_images(image_list)
     # HTML 붙여넣기 방식
     elif request.is_json:
         data = request.json
