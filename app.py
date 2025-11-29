@@ -76,7 +76,6 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    # 이미지 업로드 방식
     if 'images' in request.files or 'image' in request.files:
         files = request.files.getlist('images') or [request.files['image']]
         if not files or files[0].filename == '':
@@ -86,7 +85,6 @@ def analyze():
             if file.filename:
                 image_list.append(base64.b64encode(file.read()).decode('utf-8'))
         analysis = analyze_with_gemini_images(image_list)
-    # HTML 붙여넣기 방식
     elif request.is_json:
         data = request.json
         html_content = data.get('html', '').strip()
