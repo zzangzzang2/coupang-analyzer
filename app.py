@@ -47,9 +47,6 @@ def analyze_combined(image_list=None, html_content=None):
 
 HTML:
 """ + html_content[:30000]
-
-HTML:
-""" + html_content[:30000]
         
         content = [prompt]
         for img_data in image_list:
@@ -96,12 +93,12 @@ HTML:
 1. 상품명을 정확히 찾아주세요
 2. 가격을 찾아주세요 (원 단위)
 3. 상품의 주요 특징을 7~15개로 정리해주세요
-4. 각 특징은 - 로 시작하는 한 줄로 작성해주세요
 
 출력 형식:
 [상품명] (찾은 상품명)
 [가격] (찾은 가격)
 
+[특징]
 - 특징1
 - 특징2
 ...
@@ -125,14 +122,12 @@ def analyze():
     image_list = []
     html_content = None
     
-    # 이미지 처리
     if 'images' in request.files:
         files = request.files.getlist('images')
         for file in files:
             if file.filename:
                 image_list.append(base64.b64encode(file.read()).decode('utf-8'))
     
-    # HTML 처리
     html_content = request.form.get('html', '').strip()
     
     if not image_list and not html_content:
