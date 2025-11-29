@@ -11,21 +11,18 @@
         h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2rem; }
         .subtitle { color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px; }
         .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; font-weight: bold; color: #666; }
-        .tab.active { border-bottom-color: #667eea; color: #667eea; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .upload-area { border: 3px dashed #ccc; border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 15px; }
+        .section { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee; }
+        .section:last-of-type { border-bottom: none; margin-bottom: 15px; padding-bottom: 0; }
+        .section-title { font-weight: bold; margin-bottom: 15px; font-size: 1.1rem; }
+        .optional { color: #888; font-size: 0.9rem; font-weight: normal; }
+        .upload-area { border: 3px dashed #ccc; border-radius: 15px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
         .upload-area:hover { border-color: #667eea; background: #f8f9ff; }
         .upload-area.dragover { border-color: #667eea; background: #f0f4ff; }
-        .upload-icon { font-size: 3rem; margin-bottom: 10px; }
-        .preview-area { display: none; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .preview-area img { max-height: 200px; border-radius: 10px; }
-        .instructions { background: #f0f4ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .instructions ol { margin-left: 20px; }
-        .instructions li { margin: 5px 0; }
-        textarea { width: 100%; height: 150px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; resize: vertical; margin-bottom: 15px; }
+        .upload-area.has-files { border-color: #28a745; background: #f0fff4; }
+        .upload-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .preview-area { display: none; margin-top: 15px; flex-wrap: wrap; gap: 10px; }
+        .preview-area img { max-height: 150px; border-radius: 10px; }
+        textarea { width: 100%; height: 120px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; resize: vertical; }
         textarea:focus { outline: none; border-color: #667eea; }
         button { padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; }
         button:hover { transform: translateY(-2px); }
@@ -41,49 +38,34 @@
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
         .toast.show { opacity: 1; }
         input[type="file"] { display: none; }
-        .file-count { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; display: inline-block; }
+        .file-count { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; display: inline-block; }
+        .tip { background: #fff3cd; padding: 10px 15px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🛒 쿠팡 상품 분석기</h1>
-        <p class="subtitle">상품 페이지를 캡처하거나 HTML을 붙여넣으면 AI가 분석해드려요</p>
+        <p class="subtitle">상품 페이지를 캡처하면 AI가 블로그용 특징을 정리해드려요</p>
         <div class="card">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('image')">📷 이미지 업로드</div>
-                <div class="tab" onclick="switchTab('html')">📄 HTML 붙여넣기</div>
-            </div>
             
-            <div id="imageTab" class="tab-content active">
-                <div class="instructions">
-                    <strong>📋 사용 방법:</strong>
-                    <ol>
-                        <li>쿠팡 상품 페이지에서 <strong>GoFullPage</strong> 등으로 전체 캡처</li>
-                        <li>아래 영역에 이미지를 드래그하거나 클릭해서 업로드 (여러 장 가능!)</li>
-                    </ol>
-                </div>
+            <div class="section">
+                <div class="section-title">📷 이미지 업로드 <span class="optional">(권장)</span></div>
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();">
                     <div class="upload-icon">📁</div>
-                    <p>이미지를 드래그하거나 클릭해서 업로드</p>
-                    <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">PNG, JPG 지원 (여러 장 선택 가능)</p>
+                    <p>GoFullPage 캡처 이미지를 드래그하거나 클릭</p>
+                    <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">여러 장 선택 가능 (뒤→앞 순서로 Ctrl+클릭)</p>
                 </div>
                 <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
                 <div class="preview-area" id="previewArea"></div>
-                <button onclick="analyzeImage()">분석하기</button>
             </div>
             
-            <div id="htmlTab" class="tab-content">
-                <div class="instructions">
-                    <strong>📋 사용 방법:</strong>
-                    <ol>
-                        <li>쿠팡 상품 페이지에서 <strong>Ctrl+U</strong> (소스보기)</li>
-                        <li><strong>Ctrl+A</strong> → <strong>Ctrl+C</strong> (전체 복사)</li>
-                        <li>아래에 <strong>Ctrl+V</strong> (붙여넣기)</li>
-                    </ol>
-                </div>
-                <textarea id="htmlInput" placeholder="HTML 소스를 붙여넣으세요..."></textarea>
-                <button onclick="analyzeHtml()">분석하기</button>
+            <div class="section">
+                <div class="section-title">📄 HTML 붙여넣기 <span class="optional">(선택사항 - 상품명/가격 정확도 향상)</span></div>
+                <textarea id="htmlInput" placeholder="Ctrl+U로 소스보기 → Ctrl+A → Ctrl+C → 여기에 Ctrl+V"></textarea>
+                <div class="tip">💡 이미지만 넣어도 되지만, HTML도 함께 넣으면 상품명과 가격이 더 정확해요!</div>
             </div>
+            
+            <button onclick="analyze()">분석하기</button>
             
             <div class="loading" id="loading"><div class="spinner"></div><p>AI가 분석중...</p></div>
             <div class="error" id="error"></div>
@@ -100,18 +82,6 @@
     
     <script>
         let selectedFiles = [];
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            if (tab === 'image') {
-                document.querySelector('.tab:first-child').classList.add('active');
-                document.getElementById('imageTab').classList.add('active');
-            } else {
-                document.querySelector('.tab:last-child').classList.add('active');
-                document.getElementById('htmlTab').classList.add('active');
-            }
-        }
         
         const uploadArea = document.getElementById('uploadArea');
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
@@ -139,33 +109,27 @@
                 };
                 reader.readAsDataURL(file);
             });
-            previewArea.style.display = 'block';
-            uploadArea.style.display = 'none';
+            previewArea.style.display = 'flex';
+            uploadArea.classList.add('has-files');
+            uploadArea.innerHTML = '<div class="upload-icon">✅</div><p>' + selectedFiles.length + '장 선택됨 (클릭해서 변경)</p>';
         }
         
-        async function analyzeImage() {
-            if (selectedFiles.length === 0) { showError('이미지를 업로드해주세요.'); return; }
+        async function analyze() {
+            const html = document.getElementById('htmlInput').value.trim();
+            
+            if (selectedFiles.length === 0 && !html) {
+                showError('이미지 또는 HTML을 입력해주세요.');
+                return;
+            }
+            
             startLoading();
+            
             const formData = new FormData();
             selectedFiles.forEach(file => formData.append('images', file));
+            formData.append('html', html);
+            
             try {
                 const response = await fetch('/analyze', { method: 'POST', body: formData });
-                const data = await response.json();
-                handleResponse(data);
-            } catch (e) { showError('서버 연결 실패'); }
-            finally { stopLoading(); }
-        }
-        
-        async function analyzeHtml() {
-            const html = document.getElementById('htmlInput').value.trim();
-            if (!html) { showError('HTML을 붙여넣어주세요.'); return; }
-            startLoading();
-            try {
-                const response = await fetch('/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ html })
-                });
                 const data = await response.json();
                 handleResponse(data);
             } catch (e) { showError('서버 연결 실패'); }
