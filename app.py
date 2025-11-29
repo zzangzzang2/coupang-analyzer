@@ -7,7 +7,7 @@ app = Flask(__name__)
 def init_gemini():
     api_key = os.environ.get('GEMINI_API_KEY')
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-2.0-flash')
 
 def analyze_with_gemini(html_content):
     model = init_gemini()
