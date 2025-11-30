@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>쿠팡 상품 분석기</title>
+    <title>상품/업체 분석기</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
@@ -11,6 +11,10 @@
         h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2rem; }
         .subtitle { color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px; }
         .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .main-tabs { display: flex; margin-bottom: 25px; background: #f0f0f0; border-radius: 10px; padding: 5px; }
+        .main-tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: all 0.3s; }
+        .main-tab.active { background: white; color: #667eea; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .main-tab:hover { color: #667eea; }
         .section { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee; }
         .section:last-of-type { border-bottom: none; margin-bottom: 15px; padding-bottom: 0; }
         .section-title { font-weight: bold; margin-bottom: 15px; font-size: 1.1rem; }
@@ -40,16 +44,23 @@
         input[type="file"] { display: none; }
         .file-count { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; display: inline-block; }
         .tip { background: #fff3cd; padding: 10px 15px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; }
+        .html-section { display: block; }
+        .html-section.hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛒 쿠팡 상품 분석기</h1>
-        <p class="subtitle">상품 페이지를 캡처하면 AI가 블로그용 특징을 정리해드려요</p>
+        <h1>🔍 상품/업체 분석기</h1>
+        <p class="subtitle">페이지를 캡처하면 AI가 블로그용 특징을 정리해드려요</p>
         <div class="card">
             
+            <div class="main-tabs">
+                <div class="main-tab active" onclick="switchMainTab('coupang')">🛒 쿠팡 상품</div>
+                <div class="main-tab" onclick="switchMainTab('naver')">📍 네이버 플레이스</div>
+            </div>
+            
             <div class="section">
-                <div class="section-title">📷 이미지 업로드 <span class="optional">(권장)</span></div>
+                <div class="section-title">📷 이미지 업로드 <span class="optional">(필수)</span></div>
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();">
                     <div class="upload-icon">📁</div>
                     <p>GoFullPage 캡처 이미지를 드래그하거나 클릭</p>
@@ -59,8 +70,8 @@
                 <div class="preview-area" id="previewArea"></div>
             </div>
             
-            <div class="section">
-                <div class="section-title">📄 HTML 붙여넣기 <span class="optional">(선택사항 - 상품명/가격 정확도 향상)</span></div>
+            <div class="section html-section" id="htmlSection">
+                <div class="section-title">📄 HTML 붙여넣기 <span class="optional">(선택 - 쿠팡만)</span></div>
                 <textarea id="htmlInput" placeholder="Ctrl+U로 소스보기 → Ctrl+A → Ctrl+C → 여기에 Ctrl+V"></textarea>
                 <div class="tip">💡 이미지만 넣어도 되지만, HTML도 함께 넣으면 상품명과 가격이 더 정확해요!</div>
             </div>
@@ -82,6 +93,22 @@
     
     <script>
         let selectedFiles = [];
+        let currentType = 'coupang';
+        
+        function switchMainTab(type) {
+            currentType = type;
+            document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+            if (type === 'coupang') {
+                document.querySelector('.main-tab:first-child').classList.add('active');
+                document.getElementById('htmlSection').classList.remove('hidden');
+            } else {
+                document.querySelector('.main-tab:last-child').classList.add('active');
+                document.getElementById('htmlSection').classList.add('hidden');
+            }
+            // 결과 초기화
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+        }
         
         const uploadArea = document.getElementById('uploadArea');
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
@@ -118,7 +145,12 @@
             const html = document.getElementById('htmlInput').value.trim();
             
             if (selectedFiles.length === 0 && !html) {
-                showError('이미지 또는 HTML을 입력해주세요.');
+                showError('이미지를 업로드해주세요.');
+                return;
+            }
+            
+            if (currentType === 'naver' && selectedFiles.length === 0) {
+                showError('네이버 플레이스는 이미지를 업로드해주세요.');
                 return;
             }
             
@@ -127,6 +159,7 @@
             const formData = new FormData();
             selectedFiles.forEach(file => formData.append('images', file));
             formData.append('html', html);
+            formData.append('type', currentType);
             
             try {
                 const response = await fetch('/analyze', { method: 'POST', body: formData });
